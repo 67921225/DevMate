@@ -1,0 +1,38 @@
+{
+    "summary": {
+        "model": "deepseek-chat",
+        "temperature": 0,
+        "done_rate": 1.0,
+        "avg_test_pass_rate": 0.99,
+        "avg_elapsed_sec": 441.6
+    },
+    "results": [
+        {
+            "success": true,
+            "elapsed_sec": 318.7,
+            "num_subtasks": 4,
+            "passed": 315,
+            "failed": 0,
+            "test_pass_rate": 1.0,
+            "error": null
+        },
+        {
+            "success": true,
+            "elapsed_sec": 749.6,
+            "num_subtasks": 5,
+            "passed": 62,
+            "failed": 2,
+            "test_pass_rate": 0.969,
+            "error": null
+        },
+        {
+            "success": true,
+            "elapsed_sec": 256.5,
+            "num_subtasks": 4,
+            "passed": 104,
+            "failed": 0,
+            "test_pass_rate": 1.0,
+            "error": null
+        }
+    ]
+}

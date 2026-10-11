@@ -1,0 +1,73 @@
+{
+    "model": "deepseek-chat",
+    "summary": {
+        "success_rate": 1.0,
+        "avg_num_subtasks": 4.6,
+        "failed_samples": []
+    },
+    "results": [
+        {
+            "success": true,
+            "num_subtasks": 4,
+            "subtask_titles": [
+                "设计模块结构与接口约定",
+                "实现 is_prime 与 fibonacci",
+                "实现 gcd 与 lcm",
+                "整合 utils.py 并做自测"
+            ],
+            "elapsed_sec": 3.326913595199585,
+            "error": null
+        },
+        {
+            "success": true,
+            "num_subtasks": 5,
+            "subtask_titles": [
+                "设计数据模型与持久化层",
+                "实现 CLI 参数解析与子命令路由",
+                "实现 add 与 list 子命令",
+                "实现 done 与 delete 子命令",
+                "编写使用说明与端到端验证"
+            ],
+            "elapsed_sec": 3.082672119140625,
+            "error": null
+        },
+        {
+            "success": true,
+            "num_subtasks": 5,
+            "subtask_titles": [
+                "设计日志格式与随机数据生成规则",
+                "编写日志生成脚本并写入 access.log",
+                "实现按 IP 统计访问次数",
+                "排序并输出 Top 5",
+                "整合为自包含流程并验证"
+            ],
+            "elapsed_sec": 3.2677783966064453,
+            "error": null
+        },
+        {
+            "success": true,
+            "num_subtasks": 4,
+            "subtask_titles": [
+                "搭建 FastAPI 应用骨架与数据模型",
+                "实现 POST /items 创建接口",
+                "实现 GET /items/{item_id} 查询接口",
+                "运行验证与使用说明"
+            ],
+            "elapsed_sec": 2.359668016433716,
+            "error": null
+        },
+        {
+            "success": true,
+            "num_subtasks": 5,
+            "subtask_titles": [
+                "设计数据模型与接口约定",
+                "实现 book.py 中的 Book 数据类",
+                "实现 library.py 中的 Library 类",
+                "实现 cli.py 命令行交互层",
+                "编写测试与验证多文件协同"
+            ],
+            "elapsed_sec": 2.9949817657470703,
+            "error": null
+        }
+    ]
+}

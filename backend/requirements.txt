@@ -1,0 +1,19 @@
+# 后端
+fastapi
+uvicorn[standard]
+sqlalchemy
+
+# LLM / Agent 编排
+# 为什么补这些：原 requirements 只列了后端三个依赖，漏掉了 LLM 调用层
+# (openai)、工具/结构化输出 (langchain-core)、编排引擎 (langgraph) 和
+# 数据校验 (pydantic)。不补的话，别人 clone 下来 pip install 后无法运行。
+langgraph
+langchain-core
+openai
+pydantic
+
+# 测试与评估
+# tester 节点通过 "python -m pytest" 运行测试，eval 脚本也依赖 pytest；
+# httpx 供 FastAPI TestClient / 异步测试使用。
+pytest
+httpx

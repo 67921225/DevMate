@@ -1,0 +1,72 @@
+{
+    "model": "deepseek-chat",
+    "summary": {
+        "success_rate": 1.0,
+        "avg_num_subtasks": 4.4,
+        "failed_samples": []
+    },
+    "results": [
+        {
+            "success": true,
+            "num_subtasks": 5,
+            "subtask_titles": [
+                "设计 utils.py 模块结构",
+                "实现 is_prime 函数",
+                "实现 fibonacci 函数",
+                "实现 gcd 与 lcm 函数",
+                "整合输出 utils.py 并自测"
+            ],
+            "elapsed_sec": 3.779245138168335,
+            "error": null
+        },
+        {
+            "success": true,
+            "num_subtasks": 5,
+            "subtask_titles": [
+                "设计数据模型与存储层",
+                "实现 CLI 参数解析与命令入口",
+                "实现 add 与 list 子命令",
+                "实现 done 与 delete 子命令",
+                "编写测试与文档"
+            ],
+            "elapsed_sec": 3.0879595279693604,
+            "error": null
+        },
+        {
+            "success": true,
+            "num_subtasks": 4,
+            "subtask_titles": [
+                "设计日志格式与脚本结构",
+                "实现日志生成模块",
+                "实现日志解析与 Top 5 统计",
+                "整合与端到端验证"
+            ],
+            "elapsed_sec": 2.4013309478759766,
+            "error": null
+        },
+        {
+            "success": true,
+            "num_subtasks": 4,
+            "subtask_titles": [
+                "定义数据模型与内存存储结构",
+                "实现 POST /items 创建接口",
+                "实现 GET /items/{item_id} 查询接口",
+                "验证与运行说明"
+            ],
+            "elapsed_sec": 2.572631597518921,
+            "error": null
+        },
+        {
+            "success": true,
+            "num_subtasks": 4,
+            "subtask_titles": [
+                "定义 Book 数据类",
+                "实现 Library 类核心逻辑",
+                "实现命令行交互界面",
+                "整合与端到端验证"
+            ],
+            "elapsed_sec": 2.758605718612671,
+            "error": null
+        }
+    ]
+}
