@@ -87,6 +87,8 @@ cp .env.example .env
 uvicorn backend.app.main:app --reload
 ```
 
+浏览器打开 http://localhost:8000，即可在网页上创建项目、提交需求、实时查看执行过程。
+
 ### 4. 创建项目并派发任务
 
 | 接口 | 说明 |
@@ -102,6 +104,8 @@ uvicorn backend.app.main:app --reload
 多智能体编程助手/
 ├── LLM_using.py            # LLM 调用层（抽象基类 + 结构化输出）
 ├── tools.py                # 工具层（7 个带安全防护的工具）
+├── frontend/
+│   └── index.html         # 前端（单文件，WebSocket 实时事件流展示）
 ├── Agent/
 │   ├── state.py            # 共享状态定义（各 Agent 间流转）
 │   ├── schemas.py          # Pydantic 结构化输出模型
@@ -144,7 +148,7 @@ python eval/end_to_end_eval.py
 
 ## 已知局限 / Roadmap
 
-- **前端未接入**：事件已通过 WebSocket 实时推送，前端页面尚未开发（当前可用 `wscat` 等工具订阅 `/ws/tasks/{task_id}` 查看）。
+- **前端较简**：`frontend/index.html` 为单文件原生 JS，能创建项目、提交需求、实时查看事件流，但交互较基础，后续可升级为 Vue/React。
 - **单用户 MVP**：`user_id` 硬编码为 1，表结构已预留字段，接入登录时只改查询条件。
 - **单机存储**：SQLite，适合单机 MVP；多用户并发写可平滑迁到 MySQL / PostgreSQL。
 

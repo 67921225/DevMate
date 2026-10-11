@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevMate — 多智能体编程助手</title>
+  <style>
+    :root {
+      --bg: #f6f8fa;
+      --card: #ffffff;
+      --border: #d0d7de;
+      --text: #1f2328;
+      --muted: #656d76;
+      --blue: #0969da;
+      --purple: #8250df;
+      --green: #1a7f37;
+      --red: #cf222e;
+      --gray: #6e7781;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      background: var(--bg); color: var(--text);
+    }
+    header {
+      background: var(--card); border-bottom: 1px solid var(--border);
+      padding: 16px 24px; display: flex; align-items: center; gap: 12px;
+    }
+    header h1 { font-size: 18px; margin: 0; }
+    header p { margin: 0; color: var(--muted); font-size: 13px; }
+    main { display: flex; gap: 16px; padding: 16px 24px; align-items: flex-start; }
+    .panel {
+      background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+      padding: 16px; flex: 1; min-width: 0;
+    }
+    .panel.side { flex: 0 0 320px; }
+    .panel h2 { font-size: 14px; margin: 0 0 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+    label { display: block; font-size: 13px; margin: 10px 0 4px; color: var(--text); }
+    input, textarea, select {
+      width: 100%; padding: 8px; font-size: 13px; border: 1px solid var(--border);
+      border-radius: 6px; font-family: inherit; background: #fff;
+    }
+    textarea { resize: vertical; min-height: 90px; }
+    button {
+      margin-top: 12px; padding: 8px 16px; font-size: 13px; cursor: pointer;
+      background: var(--blue); color: #fff; border: none; border-radius: 6px;
+    }
+    button.secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    .row { display: flex; gap: 8px; align-items: center; }
+    .badge {
+      display: inline-block; padding: 2px 8px; font-size: 12px; border-radius: 12px;
+      background: #eaeef2; color: var(--muted);
+    }
+    .badge.connected { background: #dafbe1; color: var(--green); }
+    .badge.connecting { background: #fff8c5; color: #9a6700; }
+    .badge.error { background: #ffebe9; color: var(--red); }
+    .badge.closed { background: #eaeef2; color: var(--muted); }
+
+    /* 事件流 */
+    #event-log { max-height: 70vh; overflow-y: auto; font-family: "SFMono-Regular", Consolas, monospace; font-size: 12px; }
+    .event { border: 1px solid var(--border); border-left: 3px solid var(--gray); border-radius: 6px; padding: 8px 10px; margin-bottom: 8px; background: #fbfcfd; }
+    .event-header { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
+    .event .agent { font-weight: 600; color: var(--text); }
+    .event .type { color: var(--muted); font-size: 11px; }
+    .event .time { margin-left: auto; color: var(--muted); font-size: 11px; }
+    .event-body { white-space: pre-wrap; word-break: break-word; max-height: 120px; overflow-y: auto; }
+    .event-body.expanded { max-height: none; }
+    .event-meta { color: var(--muted); font-size: 11px; margin-top: 4px; white-space: pre-wrap; word-break: break-all; }
+    .toggle { color: var(--blue); cursor: pointer; font-size: 11px; user-select: none; }
+
+    /* 按事件类型上色（左边框） */
+    .event.thinking { border-left-color: var(--blue); }
+    .event.tool_call { border-left-color: var(--purple); }
+    .event.tool_result { border-left-color: var(--gray); }
+    .event.state_change { border-left-color: var(--green); }
+    .event.task_complete { border-left-color: var(--green); background: #f0fff4; }
+    .event.task_failed { border-left-color: var(--red); background: #fff5f5; }
+    .event.task_complete .agent, .event.task_failed .agent { font-weight: 700; }
+
+    @media (max-width: 860px) { main { flex-direction: column; } .panel.side { flex: 1 1 auto; width: 100%; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>DevMate</h1>
+    <p>输入一句自然语言需求，Planner / Coder / Reviewer / Tester 四个 Agent 协作完成编码闭环，实时看过程。</p>
+  </header>
+
+  <main>
+    <!-- 左侧：控制台 -->
+    <section class="panel side">
+      <h2>控制台</h2>
+
+      <label for="project-name">项目名</label>
+      <input id="project-name" placeholder="例如 demo" />
+      <label for="project-desc">项目描述（可选）</label>
+      <input id="project-desc" placeholder="一句话说明" />
+      <button id="btn-create-project">创建项目</button>
+
+      <label for="project-select">选择项目</label>
+      <select id="project-select"><option value="">— 加载中… —</option></select>
+      <button class="secondary" id="btn-reload">刷新列表</button>
+
+      <label for="task-request">任务需求</label>
+      <textarea id="task-request" placeholder="例如：写一个 utils.py，包含 is_prime / fibonacci / gcd / lcm 四个函数，带类型注解和 docstring。"></textarea>
+      <button id="btn-submit">提交任务</button>
+
+      <div class="row" style="margin-top: 12px;">
+        <span>WebSocket：</span><span id="ws-status" class="badge">未连接</span>
+      </div>
+    </section>
+
+    <!-- 右侧：实时事件流 -->
+    <section class="panel">
+      <h2 style="display:flex; justify-content:space-between;">
+        执行过程（实时）
+        <button class="secondary" id="btn-clear" style="margin:0;">清空</button>
+      </h2>
+      <div id="event-log"></div>
+    </section>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    // —— 通用 fetch：JSON 请求/响应，出错时把后端 detail 带出来 ——
+    async function api(path, options = {}) {
+      const res = await fetch(path, { headers: { 'Content-Type': 'application/json' }, ...options });
+      if (!res.ok) {
+        const detail = await res.text();
+        throw new Error(`${res.status} ${detail}`);
+      }
+      return res.json();
+    }
+
+    // —— 事件渲染（log_type 决定左边框颜色，见 CSS）——
+    function renderEvent(evt) {
+      const logBox = $('event-log');
+      const div = document.createElement('div');
+      div.className = 'event ' + (evt.log_type || 'unknown');
+
+      const header = document.createElement('div');
+      header.className = 'event-header';
+      header.innerHTML =
+        `<span class="agent">${esc(evt.agent_name || '?')}</span>` +
+        `<span class="type">${esc(evt.log_type || '?')}</span>` +
+        `<span class="time">${esc(fmtTime(evt.created_at))}</span>`;
+      div.appendChild(header);
+
+      const body = document.createElement('div');
+      body.className = 'event-body';
+      body.textContent = evt.content || '';   // textContent 防注入
+      div.appendChild(body);
+
+      // 内容过长时给一个「展开/收起」开关
+      if ((evt.content || '').length > 300) {
+        const t = document.createElement('span');
+        t.className = 'toggle';
+        t.textContent = '展开全文';
+        t.onclick = () => {
+          const expanded = body.classList.toggle('expanded');
+          t.textContent = expanded ? '收起' : '展开全文';
+        };
+        header.appendChild(t);
+      }
+
+      // metadata：tool_call 带 args、tool_result 带 tool 名，展示为紧凑 JSON
+      if (evt.metadata && Object.keys(evt.metadata).length) {
+        const meta = document.createElement('div');
+        meta.className = 'event-meta';
+        meta.textContent = JSON.stringify(evt.metadata);
+        div.appendChild(meta);
+      }
+
+      logBox.appendChild(div);
+      logBox.scrollTop = logBox.scrollHeight;   // 自动滚到底部
+    }
+
+    function log(msg, type) {
+      renderEvent({ agent_name: 'devmate', log_type: type || 'state_change', content: msg, metadata: {}, created_at: new Date().toISOString() });
+    }
+
+    // —— 项目：加载 / 创建 ——
+    async function loadProjects() {
+      try {
+        const projects = await api('/projects');
+        const sel = $('project-select');
+        const cur = sel.value;
+        sel.innerHTML = '<option value="">— 选择项目 —</option>';
+        projects.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.id;
+          opt.textContent = `#${p.id} ${p.name}`;
+          sel.appendChild(opt);
+        });
+        if (cur) sel.value = cur;
+      } catch (e) {
+        log(`加载项目失败：${e.message}`, 'task_failed');
+      }
+    }
+
+    async function createProject() {
+      const name = $('project-name').value.trim();
+      if (!name) { log('请先输入项目名', 'task_failed'); return; }
+      const description = $('project-desc').value.trim() || null;
+      try {
+        const p = await api('/projects', { method: 'POST', body: JSON.stringify({ name, description }) });
+        log(`项目已创建：#${p.id} ${p.name}（工作空间 ${p.workspace_path}）`, 'state_change');
+        $('project-name').value = '';
+        $('project-desc').value = '';
+        await loadProjects();
+        $('project-select').value = String(p.id);
+      } catch (e) {
+        log(`创建项目失败：${e.message}`, 'task_failed');
+      }
+    }
+
+    // —— 任务：提交 + 订阅 WebSocket ——
+    let ws = null;
+    async function submitTask() {
+      const project_id = $('project-select').value;
+      const request = $('task-request').value.trim();
+      if (!project_id) { log('请先选择项目', 'task_failed'); return; }
+      if (!request) { log('请输入任务需求', 'task_failed'); return; }
+      try {
+        const task = await api('/tasks', { method: 'POST', body: JSON.stringify({ project_id: Number(project_id), request }) });
+        log(`任务已创建：#${task.id}「${task.title}」`, 'state_change');
+        connectWS(task.id);
+      } catch (e) {
+        log(`提交任务失败：${e.message}`, 'task_failed');
+      }
+    }
+
+    function connectWS(taskId) {
+      if (ws) ws.close();
+      // 跟随页面协议，http→ws / https→wss
+      const proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+      ws = new WebSocket(`${proto}${location.host}/ws/tasks/${taskId}`);
+      setWsStatus('连接中…', 'connecting');
+
+      ws.onopen = () => setWsStatus(`已连接 task #${taskId}`, 'connected');
+      ws.onmessage = (e) => {
+        try { renderEvent(JSON.parse(e.data)); }
+        catch (err) { log(`解析事件失败：${err.message}`, 'task_failed'); }
+      };
+      ws.onerror = () => setWsStatus('连接错误', 'error');
+      ws.onclose = () => setWsStatus('已断开', 'closed');
+    }
+
+    function setWsStatus(text, cls) {
+      const b = $('ws-status');
+      b.textContent = text;
+      b.className = 'badge ' + (cls || '');
+    }
+
+    // —— 小工具：转义 / 时间格式 ——
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+    function fmtTime(iso) {
+      if (!iso) return '';
+      return new Date(iso).toLocaleTimeString('zh-CN', { hour12: false });
+    }
+
+    // —— 绑定 + 初始化 ——
+    $('btn-create-project').onclick = createProject;
+    $('btn-reload').onclick = loadProjects;
+    $('btn-submit').onclick = submitTask;
+    $('btn-clear').onclick = () => { $('event-log').innerHTML = ''; };
+    loadProjects();
+  </script>
+</body>
+</html>
