@@ -1,12 +1,15 @@
 import sys, os
-import threading
 from .event_bus import event_bus
 from datetime import datetime
 from ..config import BASE_DIR
 from ..models.agent_log import AgentLog
+from concurrent.futures import ThreadPoolExecutor
+from .memory import add_experience, retrieve_experiences
 
 path = os.path.dirname(BASE_DIR) # 取得父目录
 sys.path.insert(0, path)
+# 建立线程池限制并发数
+executor = ThreadPoolExecutor(max_workers=6)
 
 from Agent.orchestration import compile_graph
 import tools
@@ -18,8 +21,7 @@ def run_task(task_id, request, workspace_path):
     """
     启动一个后台线程
     """
-    thread = threading.Thread(target=_worker,args=(task_id, request, workspace_path), daemon=True)  # target 指定线程执行的函数
-    thread.start()
+    executor.submit(_worker, task_id, request, workspace_path)  # target 指定线程执行的函数
 
 # —— 处理事件的函数 ——
 def _handle_event(task_id, session, event):
@@ -68,9 +70,31 @@ def _worker(task_id, request, workspace_path):
         if task:
             task.status = "running"
             session.commit()
+            
+        plan_result = None
+        final_test = None
+
+        exps = retrieve_experiences(request, k=3)
+        context_parts = []
+        for e in exps:
+            # ① 从 SQLite 查完整内容
+            task = session.get(Task, e["task_id"])          
+            if task and task.plan_result:                    
+                titles = [t.get("title", "") for t in task.plan_result.get("tasks", [])]    
+                steps = "；".join(f"{i+1}. {t}" for i, t in enumerate(titles))
+                context_parts.append(f"- 类似需求「{e['description']}」曾拆成：{steps}")
+            else:                                            
+                context_parts.append(f"- 类似需求「{e['description']}」")
+        context = "\n".join(context_parts)
+        initial_state["context"] = context
+
         for step in app.stream(initial_state, stream_mode="updates"):
-            for node_name in step:
-                      # node_name 是 "planner" / "coder" / ...
+            for node_name, update in step.items():
+                # node_name 是 "planner" / "coder" / ...
+                if node_name == "planner":
+                    plan_result = update["tasks"]
+                if node_name == "tester":
+                    final_test = update["test_report"]     
                 event = {
                     "agent_name": node_name,
                     "log_type": "state_change",
@@ -79,8 +103,15 @@ def _worker(task_id, request, workspace_path):
                 _handle_event(task_id, session, event) 
         # 任务完成标记
         if task:
+            task.plan_result = {"tasks": plan_result}       
+            task.test_report = final_test     
             task.status = "done"
             session.commit()
+
+        try:
+           add_experience(task_id, request)
+        except Exception as e:
+           print(f"记忆写入失败（不影响任务结果）: {e}")
 
         task_complete_event = {
             "agent_name": "orchestrator",

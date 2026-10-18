@@ -3,10 +3,11 @@
 # ABC 允许你定义一个不能被实例化的父类，并强制其子类必须实现某些指定方法，即抽象基类
 from abc import ABC, abstractmethod
 from openai import OpenAI 
-import os
+import os, sys, time, random
 # 用于转换 langchain_schema 格式
-import sys
 from pydantic import BaseModel
+from openai import RateLimitError, InternalServerError, APIConnectionError, APITimeoutError
+
 
 # Windows 控制台 UTF-8 支持
 sys.stdout.reconfigure(encoding='utf-8')
@@ -67,35 +68,42 @@ class DeepseekProvider(LLMProvider):
         )-> dict:
 
         # Implementation for Deepseek model
-        response = self.client.chat.completions.create(
-            # 指定模型
-            model = self.model,
-            # 输入文本
-            messages = messages,
-            tools = tools,
-            tool_choice = tool_choice,
-            temperature = temperature,
-            stream = False, # 是否使用流式响应
-        )
+        # 添加重试机制，指数退避
+        max_retries = 5
+        for attempt in range(max_retries):
+            try:
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    tools=tools,
+                    tool_choice=tool_choice,
+                    temperature=temperature,
+                    stream=False,
+                )
 
-        # 只处理一次对话，多轮处理参看 loop
-        msg = response.choices[0].message
+                # 只处理一次对话，多轮处理参看 loop
+                msg = response.choices[0].message
 
-        # 规范化格式
-        tool_calls = None
-        if msg.tool_calls:
-            tool_calls = [
-                {
-                    'id': tc.id,
-                    "type": 'function',
-                    "function": {
-                        "name": tc.function.name,
-                        "arguments": tc.function.arguments,
-                    }
-                } 
-                for tc in msg.tool_calls
-            ]
-        return {
-            "content": msg.content,
-            "tool_calls": tool_calls,
-        }
+                # 规范化格式
+                tool_calls = None
+                if msg.tool_calls:
+                    tool_calls = [
+                        {
+                            'id': tc.id,
+                            "type": 'function',
+                            "function": {
+                                "name": tc.function.name,
+                                "arguments": tc.function.arguments,
+                            }
+                        } 
+                        for tc in msg.tool_calls
+                    ]
+                return {
+                    "content": msg.content,
+                    "tool_calls": tool_calls,
+                }
+            except (RateLimitError, InternalServerError, APIConnectionError, APITimeoutError) as e:
+                # 可重试的错误：限流 / 服务器错误 / 网络抖动
+                if attempt == max_retries - 1:
+                    raise e              # 重试耗尽，原样抛给上层
+                time.sleep(random.uniform(0, 2**attempt))      # 指数退避并使用 jitter 防止服务器集中请求

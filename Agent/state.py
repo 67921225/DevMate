@@ -43,3 +43,6 @@ class AgentState(TypedDict):
     test_report: dict
     # 写: Tester   读: 编排引擎, Coder（回退时）
     # 格式: {"passed": 0, "failed": 0, "failures": [...], "summary": "..."}
+
+    context: str
+    # 历史经验文本（写：编排器，读：Planner）

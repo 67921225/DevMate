@@ -12,10 +12,15 @@ LLM = DeepseekProvider()
 def planner_node(state: AgentState) -> AgentState:
 
     user_request = state["user_request"]
+    context = state.get("context", "")  # 获取上下文信息，如果不存在则使用空字符串
+    user_prompt = user_request 
+
+    if context:
+       user_prompt = f"{user_request}\n\n[历史类似任务经验]\n{context}"
 
     messages = [
         {"role": "system", "content": SystemPrompt},
-        {"role": "user", "content": user_request}
+        {"role": "user", "content": user_prompt}
     ]
 
     try:

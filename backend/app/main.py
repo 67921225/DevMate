@@ -1,12 +1,24 @@
 from pathlib import Path
-
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-
 from .database import engine, Base
 from .routers import project, ws, task
+from contextlib import asynccontextmanager
+from apscheduler.schedulers.background import BackgroundScheduler
+from .services.memory import cleanup_expired
 
-app = FastAPI(title="DevMate")
+scheduler = BackgroundScheduler()
+
+@asynccontextmanager
+async def lifespan(app):
+    # 每 1 天跑一次 cleanup_expired(days=30)
+    # 也可以用 ‘cron’，固定时间点触发
+    scheduler.add_job(cleanup_expired, 'interval', days=1, args=[30])
+    scheduler.start()
+    yield  # yield 之前是启动时执行，之后是关闭时执行
+    scheduler.shutdown()        
+
+app = FastAPI(title="DevMate", lifespan=lifespan)
 
 # 启动时自动建表
 Base.metadata.create_all(bind=engine)
