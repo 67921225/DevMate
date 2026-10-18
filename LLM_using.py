@@ -7,6 +7,7 @@ import os, sys, time, random
 # 用于转换 langchain_schema 格式
 from pydantic import BaseModel
 from openai import RateLimitError, InternalServerError, APIConnectionError, APITimeoutError
+from settings import settings, timeit
 
 
 # Windows 控制台 UTF-8 支持
@@ -59,6 +60,7 @@ class DeepseekProvider(LLMProvider):
         )
         self.model = model
 
+    @timeit
     def chat(
         self,
         messages,
@@ -69,7 +71,7 @@ class DeepseekProvider(LLMProvider):
 
         # Implementation for Deepseek model
         # 添加重试机制，指数退避
-        max_retries = 5
+        max_retries = settings.llm_max_retries
         for attempt in range(max_retries):
             try:
                 response = self.client.chat.completions.create(

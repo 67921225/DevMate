@@ -1,6 +1,11 @@
+import logging
+
 from Agent.state import AgentState
 from Agent.Agentloop import agent_loop
 from tools import read_file
+from settings import settings, timeit
+
+logger = logging.getLogger(__name__)
 
 system_prompt = """
     你是一个专业的程序员，能够编写高质量的代码。
@@ -16,6 +21,7 @@ system_prompt = """
        3、"old_string 要足够长、带上前后上下文，确保它能在文件里唯一定位到你要改的那一处"。
     """
 
+@timeit
 def coder_node(state: AgentState) -> AgentState:
     """
     Coder Agent 节点 —— 基于 agent_loop 执行编码任务。
@@ -61,7 +67,7 @@ def coder_node(state: AgentState) -> AgentState:
 
     prompt = "\n".join(user_input)
 
-    res = agent_loop(system_prompt, prompt, max_steps=10, agent_name="coder")
+    res = agent_loop(system_prompt, prompt, max_steps=settings.max_steps, agent_name="coder")
 
     state["file_changes"].extend(res['file_path'])
 

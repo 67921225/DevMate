@@ -11,6 +11,7 @@ langgraph
 langchain-core
 openai
 pydantic
+pydantic-settings
 
 # 测试与评估
 # tester 节点通过 "python -m pytest" 运行测试，eval 脚本也依赖 pytest；

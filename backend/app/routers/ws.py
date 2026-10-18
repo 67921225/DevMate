@@ -1,6 +1,10 @@
+import logging
+
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from ..services.event_bus import event_bus
 from fastapi.encoders import jsonable_encoder
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -23,7 +27,7 @@ async def websocket_endpoint(websocket: WebSocket, task_id: int):
             # 遇到 set、Enum 等 → 也各有对应转换
     except WebSocketDisconnect:
         # 记录
-        print(f"WebSocket disconnected for task_id: {task_id}")
+        logger.info(f"WebSocket disconnected for task_id: {task_id}")
     finally:
         event_bus.unsubscribe(task_id, queue)
     

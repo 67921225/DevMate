@@ -3,15 +3,21 @@
 读取 Coder 产出的代码文件，自动生成 pytest 测试用例、运行测试、输出报告。
 """
 
+import logging
+
 from Agent.state import AgentState
 from tools import read_file, execute_shell_command
 import re
 from Agent.Agentloop import agent_loop
+from settings import settings, timeit
+
+logger = logging.getLogger(__name__)
 
 # ============================================================
 # Tester Node
 # ============================================================
 
+@timeit
 def tester_node(state: AgentState) -> AgentState:
     """
     Tester Agent 节点。
@@ -75,7 +81,7 @@ def tester_node(state: AgentState) -> AgentState:
         {chr(10).join(file_contents)}
         请为以上代码生成 pytest 测试用例。
         """
-    response = agent_loop(system_prompt, user_request, max_steps=10, agent_name="tester")  # 调用 AgentLoop 进行对话
+    response = agent_loop(system_prompt, user_request, max_steps=settings.max_steps, agent_name="tester")  # 调用 AgentLoop 进行对话
 
     # ── 4. 获取 agent_loop 返回结果
     # 但是因为有两条分支，要检查是否报错
@@ -88,6 +94,7 @@ def tester_node(state: AgentState) -> AgentState:
         }
         state['retry_count'] = state.get('retry_count', 0) + 1
         return state
+    
     # 正常返回
     content = response["result"]
     file_path = response["file_path"]
@@ -156,5 +163,5 @@ def tester_node(state: AgentState) -> AgentState:
     }
     if failed > 0:
         state['retry_count'] = state.get('retry_count', 0) + 1
-    print(f"Tester 报告: {state['test_report']['summary']}")
+    logger.info(f"Tester 报告: {state['test_report']['summary']}")
     return state

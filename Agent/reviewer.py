@@ -1,10 +1,16 @@
+import logging
+
 from Agent.state import AgentState
 from tools import read_file, execute_shell_command
 from LLM_using import DeepseekProvider
 from Agent.schemas import ReviewReport
+from settings import timeit
+
+logger = logging.getLogger(__name__)
 
 LLM = DeepseekProvider()
 
+@timeit
 def reviewer_node(state: AgentState) -> AgentState:
 
     current_task_description = state['tasks'][state['current_task_index']]['description']
@@ -44,7 +50,7 @@ def reviewer_node(state: AgentState) -> AgentState:
             state['retry_count'] += 1
         return state
     except Exception as e:
-        print(f"Reviewer 降级: {e}")
+        logger.warning(f"Reviewer 降级: {e}")
         state["review_report"] = {
             'verdict': 'fail',
             'issues': [],

@@ -2,6 +2,7 @@ import os, time
 import chromadb
 from chromadb.utils import embedding_functions
 from ..config import BASE_DIR
+from settings import settings
 
 # 国内访问 HuggingFace 常超时，改用镜像站加载 bge 模型。
 # 必须在创建 embedding 函数之前设置：sentence_transformers 加载/校验模型时
@@ -47,7 +48,7 @@ def retrieve_experiences(query: str, k: int = 3) -> list[dict]:
         })
     return result
 
-def cleanup_expired(days: int = 30):
+def cleanup_expired(days: int = settings.memory_days):
     """删除超过 days 天的记忆"""
     cutoff = time.time() - days * 86400
     _collection.delete(where={"created_at": {"$lt": cutoff}})

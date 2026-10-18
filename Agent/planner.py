@@ -1,6 +1,11 @@
+import logging
+
 from Agent.state import AgentState
 from LLM_using import DeepseekProvider
 from Agent.schemas import TaskPlan
+from settings import timeit
+
+logger = logging.getLogger(__name__)
 
 SystemPrompt = '''
     你是一个架构师，你的任务是接受用户的输入，并将用户的需求划分成子任务。
@@ -9,6 +14,7 @@ SystemPrompt = '''
 
 LLM = DeepseekProvider()
 
+@timeit
 def planner_node(state: AgentState) -> AgentState:
 
     user_request = state["user_request"]
@@ -27,7 +33,7 @@ def planner_node(state: AgentState) -> AgentState:
         plan = LLM.chat_structured(messages, TaskPlan)
         state["tasks"] = [t.model_dump() for t in plan.tasks]
     except Exception as e:
-        print(f"Planner 降级: {e}")
+        logger.warning(f"Planner 降级: {e}")
         state["tasks"] = []
         return state
     

@@ -1,4 +1,4 @@
-import sys, os
+import sys, os, logging
 from .event_bus import event_bus
 from datetime import datetime
 from ..config import BASE_DIR
@@ -6,10 +6,14 @@ from ..models.agent_log import AgentLog
 from concurrent.futures import ThreadPoolExecutor
 from .memory import add_experience, retrieve_experiences
 
+logger = logging.getLogger(__name__)
+
 path = os.path.dirname(BASE_DIR) # 取得父目录
 sys.path.insert(0, path)
+from settings import settings
+
 # 建立线程池限制并发数
-executor = ThreadPoolExecutor(max_workers=6)
+executor = ThreadPoolExecutor(max_workers=settings.max_workers)
 
 from Agent.orchestration import compile_graph
 import tools
@@ -57,7 +61,7 @@ def _worker(task_id, request, workspace_path):
         "tasks": [],
         "current_task_index": 0,
         "retry_count": 0,
-        "max_retries": 3,
+        "max_retries": settings.max_retries,
         "file_changes": [],
         "review_report": {},
         "test_report": {}
@@ -74,7 +78,7 @@ def _worker(task_id, request, workspace_path):
         plan_result = None
         final_test = None
 
-        exps = retrieve_experiences(request, k=3)
+        exps = retrieve_experiences(request, k=settings.retrieve_k)
         context_parts = []
         for e in exps:
             # ① 从 SQLite 查完整内容
@@ -111,7 +115,7 @@ def _worker(task_id, request, workspace_path):
         try:
            add_experience(task_id, request)
         except Exception as e:
-           print(f"记忆写入失败（不影响任务结果）: {e}")
+           logger.warning(f"记忆写入失败（不影响任务结果）: {e}")
 
         task_complete_event = {
             "agent_name": "orchestrator",
@@ -131,7 +135,7 @@ def _worker(task_id, request, workspace_path):
             "content": f"任务执行异常: {str(e)}",
         }
         _handle_event(task_id, session, error_event)  
-        print(f"任务 {task_id} 执行异常: {str(e)}")  # 打印异常信息
+        logger.error(f"任务 {task_id} 执行异常: {str(e)}")
 
     finally:
         session.close()

@@ -6,6 +6,7 @@ from .routers import project, ws, task
 from contextlib import asynccontextmanager
 from apscheduler.schedulers.background import BackgroundScheduler
 from .services.memory import cleanup_expired
+from settings import settings
 
 scheduler = BackgroundScheduler()
 
@@ -13,7 +14,7 @@ scheduler = BackgroundScheduler()
 async def lifespan(app):
     # 每 1 天跑一次 cleanup_expired(days=30)
     # 也可以用 ‘cron’，固定时间点触发
-    scheduler.add_job(cleanup_expired, 'interval', days=1, args=[30])
+    scheduler.add_job(cleanup_expired, 'interval', days=1, args=[settings.memory_days])
     scheduler.start()
     yield  # yield 之前是启动时执行，之后是关闭时执行
     scheduler.shutdown()        
