@@ -14,7 +14,7 @@ class AgentState(TypedDict):
     # ── Planner 产出 ──
     tasks: list[dict]
     # 写: Planner   读: Coder, 编排引擎
-    # 每个 task 格式: {"id": 1, "title": "...", "description": "...", "expected_output": ["main.py"]}
+    # 每个 task 格式: {"id": 1, "title": "...", "description": "...", "expected_output": ["main.py"]...}
 
     # ── 进度控制 ──
     current_task_index: int

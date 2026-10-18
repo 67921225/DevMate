@@ -73,7 +73,8 @@ def tester_node(state: AgentState) -> AgentState:
             5. 测试代码必须完整、可直接运行
             6. 如果代码是 FastAPI 应用，使用 TestClient 或 httpx.AsyncClient 测试
             7. 使用 write_file 工具把测试代码写入文件（文件名以 test_ 开头），不要只在回复里展示代码
-            """       
+            8. 读被测代码时按需分块，不要读整个大文件：先 search_code 定位函数/类，再用 read_file 的 start_line/end_line 只读需要的行区间
+            """
     
     user_request = f"""
         任务描述：{task_description}

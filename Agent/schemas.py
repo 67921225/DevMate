@@ -9,7 +9,7 @@ class TaskItem(BaseModel):
     title: str
     description: str
     expected_output: list[str]
-    dependencies: list[int] = []
+    dependencies: list[int] = []  # 当前任务依赖哪些前置任务
 
 class TaskPlan(BaseModel):
     tasks: list[TaskItem]

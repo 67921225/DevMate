@@ -19,6 +19,9 @@ system_prompt = """
        1、old_string 要和文件原文逐字符一致（含缩进和换行），new_string 是你要写进去的新内容。。
        2、找不到或报错时，使用 read_file 工具，重新读取文件内容。
        3、"old_string 要足够长、带上前后上下文，确保它能在文件里唯一定位到你要改的那一处"。
+    7、读写文件要按需分块，不要读整个大文件：
+       1、先 search_code 定位相关函数/类的行号，再用 read_file 的 start_line/end_line 只读需要的行区间。
+       2、read_file 默认只返回前 200 行，超长文件务必用 start_line/end_line 分段读。
     """
 
 @timeit
@@ -29,9 +32,9 @@ def coder_node(state: AgentState) -> AgentState:
     读取: state["tasks"], state["current_task_index"]
     产出: state["file_changes"]
     """
-    tasks = state["tasks"]
+    tasks = state["tasks"]  # list[dict]
 
-    current_task_index = state["current_task_index"]
+    current_task_index = state["current_task_index"]  # 在 orchestrator 中，current_task_index 初始化为 0
 
     current_task = tasks[current_task_index]
     # 获取当前任务的信息
@@ -45,7 +48,7 @@ def coder_node(state: AgentState) -> AgentState:
 
     context_parts = []
     for f in dep_files:
-        content = read_file.func(f)               # 不存在会返回"错误:..."，不会崩
+        content = read_file.func(f)               
         context_parts.append(f"--- {f} ---\n{content}")
 
     # loop 的输入是 str

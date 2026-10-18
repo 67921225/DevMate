@@ -37,7 +37,34 @@ def execute_tool(tool_call: dict) -> str:
     except Exception as e:
         return f"错误: 工具 '{tool_name}' 执行异常 —— {e}"
 
+# 写文件类工具：代码已经落盘，历史里不需要再保留代码全文（会撑爆上下文窗口）。
+# 把 content / new_string 替换成提示，Agent 需要时用 read_file 重新读回来。
+_WRITE_TOOLS = {"write_file", "edit_file"}
+
+def _compact_tool_calls(tool_calls: list[dict]) -> list[dict]:
+    """把写文件类工具参数里的代码全文替换成提示，减少上下文占用。"""
+    compacted = []
+    for tc in tool_calls:
+        name = tc["function"]["name"]
+        if name not in _WRITE_TOOLS:
+            compacted.append(tc)
+            continue
+        try:
+            args = json.loads(tc["function"]["arguments"])
+            if name == "write_file" and "content" in args:
+                args["content"] = "<已写入文件，内容省略，需要时用 read_file 重新读取>"
+            elif name == "edit_file" and "new_string" in args:
+                args["new_string"] = "<已写入文件，内容省略>"
+            compacted.append({
+                **tc,
+                "function": {**tc["function"], "arguments": json.dumps(args, ensure_ascii=False)},
+            })
+        except json.JSONDecodeError:
+            compacted.append(tc)   # 解析失败就原样保留，不破坏流程
+    return compacted
+
 def agent_loop(system_prompt: str, user_request: str, max_steps: int = 20, agent_name: str = "Agent") -> dict:
+    # 节点调用循环，每次最大上限 20 次
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_request}
@@ -70,7 +97,7 @@ def agent_loop(system_prompt: str, user_request: str, max_steps: int = 20, agent
         messages.append({
             "role": "assistant",
             "content": response["content"],
-            "tool_calls": response["tool_calls"]
+            "tool_calls": _compact_tool_calls(response["tool_calls"])
         })
 
         # 执行工具调用
